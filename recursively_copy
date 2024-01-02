@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+import argparse
+import shutil
+import os
+from pathlib import Path
+
+# Initialize parser
+parser = argparse.ArgumentParser(
+                    prog="recursively_copy", 
+                    description="Copy folders recursively"
+)
+parser.add_argument(
+                    "source", 
+                    help="Source directory", 
+                    type=Path
+)
+parser.add_argument(
+                    "--destination", 
+                    help="Destination directory", 
+                    type=Path, 
+                    default="dist"
+)
+args = parser.parse_args()
+source_path = args.source
+destination_path = args.destination
+
+
+def recursively_copy(source=Path, destination=Path) -> None:
+    # Check if source exist
+    if source.exists():
+        if source.is_dir():
+            for child in source.iterdir():
+                recursively_copy(child, destination)
+        # Copy only files, ommit links, sockets, devices
+        if source.is_file():
+            file_extension = Path(source).suffix.casefold().strip(".")
+            # Check if there is enought permissions for create dir
+            try:
+                os.makedirs(destination / file_extension, exist_ok=True)
+            except PermissionError:
+                print(f"Operation not permitted: cannot create {destination/file_extension}")
+            # Check if file can be copied
+            try:
+                shutil.copy2(source, destination / file_extension)
+            except PermissionError:
+                print(f"Operation not permitted for {source}")
+    else:
+        print("Source does not exist")
+
+
+def main():
+    recursively_copy(source_path, destination_path)
+
+
+if __name__ == "__main__":
+    main()
